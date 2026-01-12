@@ -28,17 +28,20 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Declare servers list
-        run: |
-          set -e
-          declare -A SERVERS=(
-            [justhost]="45.8.159.202"
-          )
+      # - name: Declare servers list
+      #   run: |
+      #     set -e
+      #     declare -A SERVERS=(
+      #       [justhost]="45.8.159.202"
+      #     )
 
       - name: Deploy nginx on all servers
         if: inputs.server == 'all'
         run: | 
           set -e
+          declare -A SERVERS=(
+            [justhost]="45.8.159.202"
+          )
           mkdir -p ~/.ssh
           for NAME in "${!SERVERS[@]}"; do
             IP="${SERVERS[$NAME]}"
@@ -54,10 +57,13 @@ jobs:
         if: inputs.server != 'all'
         run: | 
           set -e
+          declare -A SERVERS=(
+            [justhost]="45.8.159.202"
+          )
           mkdir -p ~/.ssh
           echo "SSH to ${{ inputs.server }}..."
           echo "${SERVERS[${{ inputs.server }}]}"
-          ssh-keyscan -H "${SERVERS[${{ inputs.server }}]}" >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${SERVERS[${{ inputs.server }}]} >> ~/.ssh/known_hosts
           ssh github@${SERVERS[${{ inputs.server }}]} << 'EOF'
             cd /app/nginx
             export TAG=${{ inputs.tag }}
