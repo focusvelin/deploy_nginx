@@ -56,7 +56,8 @@ jobs:
           set -e
           mkdir -p ~/.ssh
           echo "SSH to ${{ inputs.server }}..."
-          ssh-keyscan -H ${SERVERS[${{ inputs.server }}]} >> ~/.ssh/known_hosts
+          echo "${SERVERS[${{ inputs.server }}]}"
+          ssh-keyscan -H "${SERVERS[${{ inputs.server }}]}" >> ~/.ssh/known_hosts
           ssh github@${SERVERS[${{ inputs.server }}]} << 'EOF'
             cd /app/nginx
             export TAG=${{ inputs.tag }}
