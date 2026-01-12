@@ -52,6 +52,7 @@ jobs:
               export TAG=${{ inputs.tag }}
               docker compose up -d
             EOF
+          done
 
       - name: Deploy nginx to ${{ inputs.server }}
         if: inputs.server != 'all'
