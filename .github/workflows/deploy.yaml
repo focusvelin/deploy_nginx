@@ -1,0 +1,65 @@
+name: Deploy nginx
+on:
+  workflow_dispatch:
+    inputs:
+      server:
+        description: 'Select server to deploy nginx'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - 'all'
+          - 'justhost'
+      tag:
+        description: 'Enter trainer image tag'
+        required: true
+        type: string
+
+concurrency:
+  group: deploy-nginx
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on:
+      - ubuntu:latest
+    steps:
+      - name: Set up SSH key
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Declare servers list
+        run: |
+          set -e
+          declare -A SERVERS=(
+            [justhost]="45.8.159.202"
+          )
+
+      - name: Deploy nginx on all servers
+        if: inputs.server == 'all'
+        run: | 
+          set -e
+          mkdir -p ~/.ssh
+          for NAME in "${!SERVERS[@]}"; do
+            IP="${SERVERS[$NAME]}"
+            echo "SSH to $NAME..."
+            ssh-keyscan -H $IP >> ~/.ssh/known_hosts
+            ssh github@$IP << 'EOF'
+              cd /app/nginx
+              export TAG=${{ inputs.tag }}
+              docker compose up -d
+            EOF
+
+      - name: Deploy nginx to ${{ inputs.server }}
+        if: inputs.server != 'all'
+        run: | 
+          set -e
+          mkdir -p ~/.ssh
+          echo "SSH to ${{ inputs.server }}..."
+          ssh-keyscan -H ${SERVERS[${{ inputs.server }}]} >> ~/.ssh/known_hosts
+          ssh github@${SERVERS[${{ inputs.server }}]} << 'EOF'
+            cd /app/nginx
+            export TAG=${{ inputs.tag }}
+            docker compose up -d
+          EOF
