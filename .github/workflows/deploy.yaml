@@ -51,7 +51,7 @@ jobs:
               cd /app/nginx
               export TAG=${{ inputs.tag }}
               docker compose up -d
-            EOF
+          EOF
           done
 
       - name: Deploy nginx to ${{ inputs.server }}
