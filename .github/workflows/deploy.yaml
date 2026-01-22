@@ -16,7 +16,16 @@ jobs:
           set -e
           declare -A HOSTS
           while IFS='=' read -r NAME IP; do
-            [[ -z "$NAME" ]] && continue
+            # skip empty lines
+            [[ -z "${NAME//[[:space:]]/}" ]] && continue
+            # skip comment lines like "# foo"
+            [[ "$NAME" =~ ^[[:space:]]*# ]] && continue
+          
+            # trim whitespace around NAME and IP
+            NAME="${NAME#"${NAME%%[![:space:]]*}"}"
+            NAME="${NAME%"${NAME##*[![:space:]]}"}"
+            IP="${IP#"${IP%%[![:space:]]*}"}"
+            IP="${IP%"${IP##*[![:space:]]}"}"
             HOSTS["$NAME"]="$IP"
           done <<< "${{ vars.SERVERS }}"
           for NAME in "${!HOSTS[@]}"; do
