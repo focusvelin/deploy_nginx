@@ -1,71 +1,25 @@
 name: Deploy nginx
 on:
   workflow_dispatch:
-    inputs:
-      server:
-        description: 'Select server to deploy nginx'
-        required: true
-        default: 'all'
-        type: choice
-        options:
-          - 'all'
-          - 'justhost'
-      tag:
-        description: 'Enter trainer image tag'
-        required: true
-        type: string
 
 concurrency:
   group: deploy-nginx
   cancel-in-progress: false
 
 jobs:
-  nginx1:
+  nginx:
     runs-on: ubuntu-24.04
     environment: prod
     steps:
-      - name: Set up SSH key
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
       - name: Deploy nginx1
         run: | 
           set -e
-          declare -A SERVERS=(
-            [justhost]="45.8.159.202"
-          )
-          mkdir -p ~/.ssh
-          echo "SSH to ${{ inputs.server }}..."
-          echo "${SERVERS[${{ inputs.server }}]}"
-          ssh-keyscan -H ${SERVERS[${{ inputs.server }}]} >> ~/.ssh/known_hosts
-          ssh github@${SERVERS[${{ inputs.server }}]} << 'EOF'
-            cd /app/nginx
-            export TAG=${{ inputs.tag }}
-            docker compose up -d nginx1
-          EOF
-
-  nginx2:
-    runs-on: ubuntu-24.04
-    environment: prod
-    steps:
-      - name: Set up SSH key
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Deploy nginx2
-        run: | 
-          set -e
-          declare -A SERVERS=(
-            [justhost]="45.8.159.202"
-          )
-          mkdir -p ~/.ssh
-          echo "SSH to ${{ inputs.server }}..."
-          echo "${SERVERS[${{ inputs.server }}]}"
-          ssh-keyscan -H ${SERVERS[${{ inputs.server }}]} >> ~/.ssh/known_hosts
-          ssh github@${SERVERS[${{ inputs.server }}]} << 'EOF'
-            cd /app/nginx
-            export TAG=${{ inputs.tag }}
-            docker compose up -d nginx2
-          EOF
+          declare -A HOSTS
+          while IFS='=' read -r NAME IP; do
+            [[ -z "$NAME" ]] && continue
+            HOSTS["$NAME"]="$IP"
+          done <<< "${{ vars.SERVERS }}"
+          for NAME in "${!HOSTS[@]}"; do
+            IP="${HOSTS[$NAME]}"
+            echo "SSH to $NAME($IP)..."
+          done
